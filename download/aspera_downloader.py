@@ -24,7 +24,6 @@ def get_args():
     parser = argparse.ArgumentParser(description="Download files from ENA using Aspera")
     parser.add_argument("-i", "--input", type=str, help="Input file with list of SRXs to download", required=True)
     parser.add_argument("-o", "--output", type=str, help="Output directory to save files", default="./", required=False)
-    parser.add_argument("-a", "--aspera", type=str, help="Path to aspera binary", required=True)
     parser.add_argument("-k", "--asperakey", type=str, help="Path to aspera key", required=True)
     parser.add_argument("-s", "--asperaserver", type=str, help="Aspera server", default="era-fasp@fasp.sra.ebi.ac.uk", required=False)
     parser.add_argument("-ms", "--maxspeed", help="Max speed for download", default="300m", required=False)
@@ -67,7 +66,7 @@ def download_from_SRX(args, SRX):
 
         for count, tmp in enumerate(file_templates):
             file_path = args.asperaServer + ":" + tmp
-            download_cmd = f"args.aspera -QT -l {args.maxspeed} -i {args.asperakey} {file_path} {path}"
+            download_cmd = f"ascp -QT -l {args.maxspeed} -i {args.asperakey} {file_path} {path}"
             result = subprocess.run(download_cmd, shell=True, capture_output=True, text=True)
             if not session_stop(result):
                 print_loggings_to_console(file_path, path, download_cmd, result)
