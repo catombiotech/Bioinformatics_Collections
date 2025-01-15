@@ -30,8 +30,8 @@ options:
                         Max speed for download
 ```
 
-Your input SRX list should be organized into a file with a single column, without any other information. For example:
-your input file should look like srx_list.txt
+Your input SRX list should be organized into a file with a single column, without any other information.  
+For example, your input file should look like `srx_list.txt` below
 ```
 SRX123456
 SRX123457
