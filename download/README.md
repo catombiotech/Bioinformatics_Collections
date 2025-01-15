@@ -2,15 +2,16 @@
 
 ## aspera downloader
 ### Requirements
+We recommend to use `mamba` to manage your environments.
 ```shell
 mamba create -n aspera_env
+mamba activate aspera_env
 mamba install bioconda::entrez-direct
 mamba install install hcc::aspera-cli
-mamba activate aspera_env
 ```
-Your sshkey is storeds at `~/miniforge3/envs/aspera_env/etc/asperaweb_id_dsa.openssh`
+Your sshkey is stored at `~/miniforge3/envs/aspera_env/etc/asperaweb_id_dsa.openssh`.
 
-### Quick start
+### How to use
 Check out `python aspera_downloader.py --help` for details:
 ```
 usage: aspera_downloader.py [-h] -i INPUT [-o OUTPUT] -k ASPERAKEY [-s ASPERASERVER] [-ms MAXSPEED]
@@ -27,4 +28,18 @@ options:
                         Aspera server
   -ms, --maxspeed MAXSPEED
                         Max speed for download
+```
+
+Your input SRX list should be organized into a file with a single column, without any other information. For example:
+your input file should look like srx_list.txt
+```
+SRX123456
+SRX123457
+SRX123458
+```
+Then run the command below after activating your environment:
+```shell
+python aspera_downloader.py -i srx_list.txt \
+                            -o ./output_dir/ \
+                            -k ~/miniforge3/envs/aspera_env/etc/asperaweb_id_dsa.openssh 
 ```
