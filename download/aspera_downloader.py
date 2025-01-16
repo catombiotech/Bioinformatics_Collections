@@ -6,7 +6,7 @@ import pandas as pd
 
 def get_file(SRR, TYPE):
     # Define the base path for the file
-    base_path = f"/vol1/{TYPE}/{SRR[:6]}/{SRR}"
+    base_path = f"/vol1/{TYPE}/{SRR[:6]}"
 
     # Add your own file templates here
     file_templates = [
@@ -25,7 +25,8 @@ def get_args():
     parser.add_argument("-i", "--input", type=str, help="Input file with list of SRXs to download", required=True)
     parser.add_argument("-o", "--output", type=str, help="Output directory to save files", default="./", required=False)
     parser.add_argument("-k", "--asperakey", type=str, help="Path to aspera key", required=True)
-    parser.add_argument("-s", "--asperaserver", type=str, help="Aspera server", default="era-fasp@fasp.sra.ebi.ac.uk", required=False)
+    parser.add_argument("-s", "--asperaserver", type=str, help="Aspera server. Default is era-fasp@fasp.sra.ebi.ac.uk, option is anonftp@ftp.ncbi.nlm.nih.gov", 
+                        default="era-fasp@fasp.sra.ebi.ac.uk", required=False)
     parser.add_argument("-ms", "--maxspeed", help="Max speed for download", default="300m", required=False)
     return parser.parse_args()
 
@@ -44,7 +45,7 @@ def SRX_to_SRR(SRX):
     return SRR
 
 def print_loggings_to_console(file, path, cmd, result):
-    print(f"Start downloading {file}")
+    print(f"Finished downloading {file}")
     print(f"Output directory: {path}")
     print(f"Command: {cmd}")
     print("Log:")
@@ -54,25 +55,35 @@ def print_loggings_to_console(file, path, cmd, result):
     print("#########################")
 
 def session_stop(cmd_result):
-    flag = "Session Stop  (Error: Server aborted session: No such file or directory)" in cmd_result.stdout
+    flag = "Session Stop" in cmd_result.stdout
     return flag
+
+def download_from_SRR(args, SRR, output_dir=None):
+    file_templates = get_file(SRR, "fastq") + get_file(SRR, "sra")
+
+    if output_dir is None:
+        output_dir = os.path.join(args.output)
+
+    flag = 0
+    for tmp in file_templates:
+        EBI_path = args.asperaserver + ":" + tmp
+        download_cmd = f"ascp -QT -l {args.maxspeed} -i {args.asperakey} {EBI_path} {output_dir}"
+        
+        print("Trying to download with command:\n", download_cmd)
+        result = subprocess.run(download_cmd, shell=True, capture_output=True, text=True)
+        if not False:#session_stop(result):
+            print_loggings_to_console(EBI_path, output_dir, download_cmd, result)
+            flag += 1
+    if flag == 0:
+        print(f"Files for {SRR} not found, check https://www.ebi.ac.uk/ena/browser/view/{SRR} for details.")
+
 
 def download_from_SRX(args, SRX):
     SRR_ids = SRX_to_SRR(SRX)
     path = os.path.join(args.output, SRX)
     os.makedirs(path, exist_ok=True)
     for SRR in SRR_ids:
-        file_templates = get_file(SRR, "fastq") + get_file(SRR, "sra")
-
-        for count, tmp in enumerate(file_templates):
-            file_path = args.asperaServer + ":" + tmp
-            download_cmd = f"ascp -QT -l {args.maxspeed} -i {args.asperakey} {file_path} {path}"
-            result = subprocess.run(download_cmd, shell=True, capture_output=True, text=True)
-            if not session_stop(result):
-                print_loggings_to_console(file_path, path, download_cmd, result)
-                break
-            if count == len(file_templates) - 1:
-                print(f"File not found for {SRR} of {SRX}")
+        download_from_SRR(args, SRR, path)
 
 
 if __name__ == "__main__":
@@ -83,6 +94,12 @@ if __name__ == "__main__":
 
     with open(args.input, "r") as f:
         for line in f:
-            SRX = line.strip()
-            print(f"Start downloading {SRX}")
-            download_from_SRX(args, SRX)
+            file_ID = line.strip()
+            if file_ID.startswith("SRR"):
+                print(f"Start downloading {file_ID}")
+                download_from_SRR(args, file_ID)
+            elif file_ID.startswith("SRX"):
+                print(f"Start downloading {file_ID}")
+                download_from_SRX(args, file_ID)
+            else:
+                print(f"Invalid ID: {file_ID}")
